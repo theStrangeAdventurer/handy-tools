@@ -8,6 +8,10 @@
     "files": [
         "dist/*"
     ],
+    "publishConfig": {
+        "access": "public",
+        "registry": "https://registry.npmjs.org/"
+    },
     "scripts": {
         "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --outdir=dist/cjs --platform=node --format=cjs && esbuild src/index.ts --bundle --outdir=dist/esm --platform=node --format=esm"
     },

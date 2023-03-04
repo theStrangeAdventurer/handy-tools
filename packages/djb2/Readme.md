@@ -3,7 +3,10 @@
 ## Usage
 
 ```javascript
+npm i @handy-tools/djb2
+
 import { djb2 } from '@handy-tools/djb2';
+
 djb2('hello world');
 ```
 
