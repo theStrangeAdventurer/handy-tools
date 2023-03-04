@@ -4,7 +4,7 @@
 
 ```javascript
 import { djb2 } from '@handy-tools/djb2';
-djb2('hello world'); // output: 894552257
+djb2('hello world');
 ```
 
 ## EN 
