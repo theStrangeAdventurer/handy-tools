@@ -1,0 +1,27 @@
+{
+    "name": "@handy-tools/djb2",
+    "version": "1.0.0",
+    "description": "djb2 hash function",
+    "main": "dist/cjs/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist/*"
+    ],
+    "scripts": {
+        "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --outdir=dist/cjs --platform=node --format=cjs && esbuild src/index.ts --bundle --outdir=dist/esm --platform=node --format=esm"
+    },
+    "keywords": [
+        "djb2",
+        "hash",
+        "function"
+    ],
+    "author": {
+        "name": "Alexey Zaytsev",
+        "email": "alexej3ajtsev@gmail.com",
+        "url": "https://thestrangeadventurer.com"
+    },
+    "devDependencies": {
+        "esbuild": "^0.17.11"
+    }
+}
