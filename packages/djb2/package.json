@@ -5,6 +5,11 @@
     "main": "dist/cjs/index.js",
     "module": "dist/esm/index.js",
     "types": "dist/index.d.ts",
+    "repository": {
+        "type": "https",
+        "url": "https://github.com/theStrangeAdventurer/handy-tools/tree/main/packages/djb2"
+    },
+    "license": "MIT",
     "files": [
         "dist/*"
     ],
