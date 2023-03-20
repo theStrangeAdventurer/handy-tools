@@ -1,13 +1,13 @@
 {
-    "name": "@handy-tools/djb2",
-    "version": "1.0.2",
-    "description": "djb2 hash function",
+    "name": "@handy-tools/validator",
+    "version": "0.1.0",
+    "description": "fancy validate objects",
     "main": "dist/cjs/index.js",
     "module": "dist/esm/index.js",
     "types": "dist/index.d.ts",
     "repository": {
         "type": "https",
-        "url": "https://github.com/theStrangeAdventurer/handy-tools/tree/main/packages/djb2"
+        "url": "https://github.com/theStrangeAdventurer/handy-tools/tree/main/packages/object-validator"
     },
     "license": "MIT",
     "files": [
@@ -18,12 +18,10 @@
         "registry": "https://registry.npmjs.org/"
     },
     "scripts": {
+        "dev": "ts-node-dev src/index.ts",
         "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --outdir=dist/cjs --platform=node --format=cjs && esbuild src/index.ts --bundle --outdir=dist/esm --platform=node --format=esm"
     },
     "keywords": [
-        "djb2",
-        "hash",
-        "function"
     ],
     "author": {
         "name": "Alexey Zaytsev",
