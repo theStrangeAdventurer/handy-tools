@@ -4,25 +4,38 @@ test('Should correctly handle all values', () => {
     const scheme = new Validator({
         name: 'string',
         age: 'number',
-        email: 'email',
+        emails: Validator.nested({
+            gmailEmail: {
+                type: 'email',
+                required: true, // true is default value
+                // Custom validation function
+                errorMessage: 'Gmail email is required',
+                // Custom validation function
+                validate: (value) => {
+                    return value?.includes('@gmail.com');
+                }
+            },
+            optionalEmail: {
+                type: 'email',
+                required: false,
+            },
+        }),
         extra: Validator.nested({
             ip: 'ipv4',
             ipv6: 'ipv6',
-        }),
-        cards: Validator.arrayOf('creditCard'),
+        })
     });
     const res = scheme.validate({
         name: 'John',
         age: 20,
-        email: 'author@mail.ru',
+        emails: {
+            gmailEmail: 'some@gmail.com',
+            optionalEmail: '',
+        },
         extra: {
             ip: '192.168.0.34',
             ipv6: '2001:0db8:85a3:0000:0000:8a2e:0370:7334',
-        },
-        cards: [
-            '4111111111111',
-            '4012888888881881',
-        ]
+        }
     });
     expect(res.result).toBeTruthy();
 });
