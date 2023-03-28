@@ -24,7 +24,80 @@ test('Should correctly handle all values', () => {
             '4012888888881881',
         ]
     });
-    console.log(res.errors)
+    expect(res.result).toBeTruthy();
+});
+
+test('Should fail with validate extra fields', () => {
+    const scheme = new Validator({
+        name: 'string',
+        age: 'number',
+        email: 'email',
+    }, {
+        validateExtraFields: true,
+    });
+    const res = scheme.validate({
+        name: 'John',
+        age: 20,
+        email: 'email@gmail.com',
+        extra: 'this field nit exists in scheme',
+    });
+    expect(res.errors[0]).toContain('Validator hasn\'t this field in scheme');
+});
+
+test('Should pass with object with extra fields', () => {
+    const scheme = new Validator({
+        name: 'string',
+        age: 'number',
+        email: 'email',
+    }, {
+        validateExtraFields: false,
+    });
+    const res = scheme.validate({
+        name: 'John',
+        age: 20,
+        email: 'email@gmail.com',
+        extra: 'this field nit exists in scheme and now is valid',
+    });
+    expect(res.result).toBeTruthy();
+});
+
+test('Should fail with validate extra nested fields', () => {
+    const scheme = new Validator({
+        name: 'string',
+        age: 'number',
+        email: 'email',
+    }, {
+        validateExtraFields: true,
+    });
+    const res = scheme.validate({
+        name: 'John',
+        age: 20,
+        email: 'email@gmail.com',
+        extra: { // Not validatabale fields
+            email: 'someemail@gmail.com',
+            name: 'John',
+        }
+    });
+    expect(res.errors[0]).toContain("Validator hasn't this field in scheme");
+});
+
+test('Should pass object with extra nested fiedls', () => {
+    const scheme = new Validator({
+        name: 'string',
+        age: 'number',
+        email: 'email',
+    }, {
+        validateExtraFields: false,
+    });
+    const res = scheme.validate({
+        name: 'John',
+        age: 20,
+        email: 'email@gmail.com',
+        extra: { // Not validatabale fields
+            email: 'someemail@gmail.com',
+            name: 'John',
+        }
+    });
     expect(res.result).toBeTruthy();
 });
 

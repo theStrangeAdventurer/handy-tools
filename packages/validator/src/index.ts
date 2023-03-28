@@ -3,12 +3,13 @@ import { ObjectSchema, SchemeTypes, ValidatableObj, ValidateResult, ShemeExtende
 import { validateWithRegexp } from "./utils";
 import { ValidatorNestedSchema, ValidatorArraySchema, ValidatorOrSchema } from "./validator-helpers";
 
-export class Validator {
+class Validator {
     private count = 0;
+    static REGEXP = REGEXP;
 
     constructor(
         private schema: ObjectSchema,
-        private options = {} as Partial<{ FIXME: 'add options' }>, 
+        private options = {} as Partial<{ validateExtraFields: boolean }>, 
         private maxDepth = 100
     ) {}
     
@@ -35,19 +36,20 @@ Max depth: ${this.maxDepth}
         for (const field of Object.keys(obj)) {
             let schemaType = schema[field];
             if (!schemaType && isOr) {
-                return { result: false, errors: [ 'Shema not compatible with object' ] };
+                return { result: false, errors: [ 'Schema not compatible with object' ] };
             }
             if (!schemaType) {
-                console.dir({
-                    field,
-                    schema,
-                    obj
-                })
-                throw new Error(`
-Validator hasn't this field in scheme
+                const errMessage = `Validator hasn't this field in scheme
 Field: ${field}
 Scheme: ${JSON.stringify(schema, null, 2)}
-                `)
+`
+                if (this.options.validateExtraFields) {
+                    errors.push(errMessage);
+                    return { result: false, errors };
+                } else {
+                    // Skip this field if it's not in scheme
+                    continue;
+                }
             }
 
             // @ts-expect-error validate exists
@@ -69,6 +71,7 @@ Scheme: ${JSON.stringify(schema, null, 2)}
             if (!Array.isArray(value) && schemaType instanceof ValidatorOrSchema) {
                 const _schemas = schemaType.schema.map(convertToSchema);
                 const _validatableObj = convertValueToValidationObj(value);
+                
                 const results = _schemas.map(_scheme => {
                     const result = this.validate(_validatableObj, _scheme, errors, true)
                     return result;
@@ -232,4 +235,8 @@ Type: ${schemaType}, default case
 
         return { result: errors.length === 0, errors };
     }
+}
+
+export {
+    Validator
 }
