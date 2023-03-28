@@ -56,6 +56,8 @@ Scheme: ${JSON.stringify(schema, null, 2)}
             const validateFn: ValidateFn = schemaType?.validate ?? null;
             // @ts-expect-error errorMessage exists
             const errorMessage = schemaType?.errorMessage ?? null;
+            // @ts-expect-error required exists
+            const isRequired = typeof schemaType?.required === 'undefined' ? true : Boolean(schemaType?.required);
             const value = obj[field];
             const convertToSchema = (sh: ObjectSchema | SchemeTypes): ObjectSchema => {
                 if (typeof sh === 'string') {
@@ -69,7 +71,9 @@ Scheme: ${JSON.stringify(schema, null, 2)}
                 }
                 return { [field]: v };
             }
-
+            if ((typeof value === 'undefined' || value === '')  && !isRequired) {
+                continue;
+            }
             if (!Array.isArray(value) && schemaType instanceof ValidatorOrSchema) {
                 const _schemas = schemaType.schema.map(convertToSchema);
                 const _validatableObj = convertValueToValidationObj(value);

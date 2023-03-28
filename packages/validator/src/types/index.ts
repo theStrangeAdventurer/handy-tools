@@ -23,7 +23,12 @@ export type ValidateResult = { result: boolean, errors: string[] };
 
 export type SchemeTypes = typeof SCHEME_TYPES[keyof typeof SCHEME_TYPES];
 
-export type ShemeExtendedType = { type?: SchemeTypes, validate: ValidateFn, errorMessage?: string };
+export type ShemeExtendedType = Partial<{
+    type: SchemeTypes;
+    validate: ValidateFn;
+    errorMessage: string;
+    required: boolean;
+}>;
 
 export type ValidateFn = (value: any) => boolean;
 
