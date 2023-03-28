@@ -54,6 +54,8 @@ Scheme: ${JSON.stringify(schema, null, 2)}
 
             // @ts-expect-error validate exists
             const validateFn: ValidateFn = schemaType?.validate ?? null;
+            // @ts-expect-error errorMessage exists
+            const errorMessage = schemaType?.errorMessage ?? null;
             const value = obj[field];
             const convertToSchema = (sh: ObjectSchema | SchemeTypes): ObjectSchema => {
                 if (typeof sh === 'string') {
@@ -109,6 +111,17 @@ Validator can't handle passed type
 Type: ${schemaType}
 Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
                 `)
+            }
+
+            if (validateFn) {
+                const result = validateFn(value);
+                if (!result) {
+                    const reason = 'because validate function returned false';
+                    errors.push(errorMessage ?? `Field ${field} is not valid, ${reason}`);
+                    return { result: Boolean(result), errors };
+                } else {
+                    continue;
+                }
             }
 
             if (!schemaType || typeof schemaType !== 'string') {
