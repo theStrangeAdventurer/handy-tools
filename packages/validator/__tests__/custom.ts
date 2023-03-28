@@ -79,3 +79,23 @@ test('Should fail handle nested validation fn result', () => {
     });
     expect(res.errors[0]).toContain(CUSTOM_ERROR_MESSAGE);
 });
+
+test('Should show custom error message without validate function', () => {
+    const CUSTOM_ERROR_MESSAGE =  'Email is a required field'
+    const scheme = new Validator({
+        person: Validator.nested({
+            name: 'string',
+            email: {
+                errorMessage: CUSTOM_ERROR_MESSAGE,
+                type: 'email'
+            }
+        }),
+    });
+    const res = scheme.validate({
+        person: {
+            name: 'John',
+            email: 'invalidEmail',
+        }
+    });
+    expect(res.errors[0]).toContain(CUSTOM_ERROR_MESSAGE);
+});

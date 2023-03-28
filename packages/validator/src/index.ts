@@ -146,19 +146,19 @@ Type schemaType: ${schemaType}
                         const result = validateFn ? validateFn(value) : JSON.parse(value as string);
                         if (!result) {
                             const reason = 'because validate function returned false';
-                            errors.push(`Field ${field} is not a json, ${reason}`);
+                            errors.push(errorMessage ?? `Field ${field} is not a json, ${reason}`);
                             return { result: Boolean(result), errors };
                         }
                         
                     } catch (e) {
-                        errors.push(`Field ${field} is not a json`);
+                        errors.push(errorMessage ?? `Field ${field} is not a json`);
                         return { result: false, errors };
                     }
                     break;
                 }
                 case 'email': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.EMAIL, validateFn
+                        field, value, re: REGEXP.EMAIL, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -166,7 +166,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'url': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.URL, validateFn
+                        field, value, re: REGEXP.URL, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -174,7 +174,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'uuid': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.UUID, validateFn
+                        field, value, re: REGEXP.UUID, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -182,7 +182,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'base64': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.BASE64, validateFn
+                        field, value, re: REGEXP.BASE64, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -190,7 +190,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'hex': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.HEX, validateFn
+                        field, value, re: REGEXP.HEX, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -198,7 +198,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'hexColor': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.HEX_COLOR, validateFn
+                        field, value, re: REGEXP.HEX_COLOR, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -206,7 +206,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'creditCard': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.CREDIT_CARD, validateFn
+                        field, value, re: REGEXP.CREDIT_CARD, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -214,7 +214,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'ipv4': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.IPV4, validateFn
+                        field, value, re: REGEXP.IPV4, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -222,7 +222,7 @@ Type schemaType: ${schemaType}
                 }
                 case 'ipv6': {
                     const res = validateWithRegexp({
-                        field, value, re: REGEXP.IPV6, validateFn
+                        field, value, re: REGEXP.IPV6, validateFn, errorMessage
                     });
                     if (!res.result)
                         return res;
@@ -232,7 +232,7 @@ Type schemaType: ${schemaType}
                 case 'string':
                 case 'boolean':
                     if (typeof value !== schemaType) {
-                        errors.push(`Field ${field} is not a ${schemaType}`);
+                        errors.push(errorMessage ?? `Field ${field} is not a ${schemaType}`);
                         return { result: false, errors };
                     }
                     break;
