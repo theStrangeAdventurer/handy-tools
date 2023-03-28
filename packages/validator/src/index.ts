@@ -1,81 +1,14 @@
 import { REGEXP } from "./constants";
-
-const SCHEME_TYPES = {
-    'string': 'string',
-    'number': 'number',
-    'boolean': 'boolean',
-    'array': 'array',
-    'null': 'null',
-    'email': 'email',
-    'url': 'url',
-    'uuid': 'uuid',
-    'hex': 'hex',
-    'hexColor': 'hexColor',
-    'creditCard': 'creditCard',
-    'phone': 'phone',
-    'ipv4': 'ipv4',
-    'ipv6': 'ipv6',
-    'json': 'json',
-    'base64': 'base64',
-} as const;
-
-type ValidateResult = { result: boolean, errors: string[] };
-
-type SchemeTypes = typeof SCHEME_TYPES[keyof typeof SCHEME_TYPES];
-
-type ShemeExtendedType = { type: SchemeTypes, validate: ValidateFn };
-
-type ValidateFn = (value: any) => boolean;
-
-type ObjectSchema = {
-    [key: string]:
-        | SchemeTypes
-        | ShemeExtendedType
-        | ValidatorNestedSchema
-        | ValidatorArraySchema;
-};
-
-type ValidatableObj = Record<string, unknown>;
-
-const validateWithRegexp = (props: {
-    field: string, value: any, re: RegExp, validateFn?: ValidateFn
-}): ValidateResult => {
-    const { field, value, re, validateFn } = props;
-    let message = '';
-    const result = validateFn ? validateFn(value) : re.test(value);
-    if (!result) {
-        const reason = validateFn ? 'because validate function returned false' : `${value} does not match the regexp ${re.toString()}`;
-        message = `Field ${field} is invalid, ${reason}`;
-    }
-    return { result, errors: [message] };
-}
-
-class ValidatorNestedSchema {
-    constructor(
-        private _schema: ObjectSchema
-    ) {}
-
-    get schema(): ObjectSchema {
-        return this._schema;
-    }
-}
-
-class ValidatorArraySchema {
-    constructor(
-        private _schema: ObjectSchema | SchemeTypes
-    ) {}
-
-    get schema(): ObjectSchema | SchemeTypes {
-        return this._schema;
-    }
-}
+import { ObjectSchema, SchemeTypes, ValidatableObj, ValidateResult, ShemeExtendedType, SCHEME_TYPES } from "./types";
+import { validateWithRegexp } from "./utils";
+import { ValidatorNestedSchema, ValidatorArraySchema, ValidatorOrSchema } from "./validator-helpers";
 
 export class Validator {
     private count = 0;
 
     constructor(
         private schema: ObjectSchema,
-        private options = {} as Partial<{ fixme: 'add options' }>, 
+        private options = {} as Partial<{ FIXME: 'add options' }>, 
         private maxDepth = 100
     ) {}
     
@@ -87,7 +20,11 @@ export class Validator {
         return new ValidatorArraySchema(schema);
     }
 
-    validate(obj: ValidatableObj, schema = this.schema, errors = [] as string[]): ValidateResult {
+    static or(schema: Array<ObjectSchema | SchemeTypes>): ValidatorOrSchema {
+        return new ValidatorOrSchema(schema);
+    }
+
+    validate(obj: ValidatableObj, schema = this.schema, errors = [] as string[], isOr = false): ValidateResult {
         this.count++;
         if (this.count > this.maxDepth) {
             throw new Error(`
@@ -97,34 +34,54 @@ Max depth: ${this.maxDepth}
         }
         for (const field of Object.keys(obj)) {
             let schemaType = schema[field];
-            
+            if (!schemaType && isOr) {
+                return { result: false, errors: [ 'Shema not compatible with object' ] };
+            }
             if (!schemaType) {
                 console.dir({
                     field,
                     schema,
+                    obj
                 })
                 throw new Error(`
 Validator hasn't this field in scheme
 Field: ${field}
+Scheme: ${JSON.stringify(schema, null, 2)}
                 `)
             }
 
             // @ts-expect-error validate exists
             const validateFn: ValidateFn = schemaType?.validate ?? null;
             const value = obj[field];
+            const convertToSchema = (sh: ObjectSchema | SchemeTypes): ObjectSchema => {
+                if (typeof sh === 'string') {
+                    return { [field]: sh };
+                }
+                return sh;
+            }
+            const convertValueToValidationObj = (v: unknown): ValidatableObj => {
+                if (typeof v === 'object') {
+                    return v as ValidatableObj;
+                }
+                return { [field]: v };
+            }
 
-            if (typeof value === 'object' && Array.isArray(value) && typeof schemaType === 'object' && schemaType instanceof ValidatorArraySchema) {
-                const schemaOrShemaType = schemaType.schema;
-                for (const v of value) {
-                    let result = { result: false, errors: [`Field ${field} has not matched with scheme`] };
-                    if (typeof v === 'object' && typeof schema === 'object') {
-                        // @ts-expect-error scheme is valid
-                        result = this.validate(v, schemaOrShemaType, errors);
-                    }
-                    else if (typeof v !== 'object' && (typeof schemaOrShemaType === 'string' || schemaOrShemaType?.validate)) {
-                        // @ts-expect-error scheme is valid
-                        result = this.validate({ [field]: v }, { [field]: schemaOrShemaType }, errors);
-                    }
+            if (!Array.isArray(value) && schemaType instanceof ValidatorOrSchema) {
+                const _schemas = schemaType.schema.map(convertToSchema);
+                const _validatableObj = convertValueToValidationObj(value);
+                const results = _schemas.map(_scheme => {
+                    const result = this.validate(_validatableObj, _scheme, errors, true)
+                    return result;
+                });
+                if (results.some(r => r.result)) {
+                    continue;
+                }
+                return { result: false, errors: results.map(r => r.errors).flat() };
+            } else if (typeof value === 'object' && Array.isArray(value) && schemaType instanceof ValidatorArraySchema) {
+                const _schema = convertToSchema(schemaType.schema);
+                const _values = value.map(convertValueToValidationObj);
+                for (const v of _values) {
+                    const result = this.validate(v, _schema, errors);
 
                     if (!result?.result) {
                         return result;
@@ -152,9 +109,10 @@ Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
             }
 
             if (!schemaType || typeof schemaType !== 'string') {
+                console.log({ schemaType })
                 throw new Error(`
 Unexpected type for validation
-Type: ${schemaType}
+Type schemaType: ${schemaType}
                 `)
             }
 
@@ -264,6 +222,7 @@ Type: ${schemaType}
                     break;
 
                 default:
+                    console.dir({ schemaType })
                     throw new Error(`
 Unexpected type for validation
 Type: ${schemaType}, default case
