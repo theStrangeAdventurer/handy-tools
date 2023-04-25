@@ -1,6 +1,6 @@
 {
     "name": "@handy-tools/validator",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "fancy validate objects",
     "main": "dist/cjs/index.js",
     "module": "dist/esm/index.js",
@@ -21,8 +21,7 @@
         "dev": "ts-node-dev src/index.ts",
         "build": "tsc -p tsconfig.json && esbuild src/index.ts --bundle --outdir=dist/cjs --platform=node --format=cjs && esbuild src/index.ts --bundle --outdir=dist/esm --platform=node --format=esm"
     },
-    "keywords": [
-    ],
+    "keywords": [],
     "author": {
         "name": "Alexey Zaytsev",
         "email": "alexej3ajtsev@gmail.com",
