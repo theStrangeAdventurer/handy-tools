@@ -26,6 +26,7 @@ class Validator {
     }
 
     validate(obj: ValidatableObj, schema = this.schema, errors = [] as string[], isOr = false): ValidateResult {
+        // FIXME: need clean this count when validation is finished in one place instead multiple places
         this.count++;
         const objectKeys = Object.keys(obj);
         const schemaKeys = Object.keys(schema);
@@ -33,9 +34,11 @@ class Validator {
 
         if (incompatibleKeys.length) {
             const errors = incompatibleKeys.map(key => `Object is incompatible with scheme: hasn't this '${key}' field`);
+            this.count = 0;
             return { result: false, errors };
         }
         if (this.count > this.maxDepth) {
+            this.count = 0;
             throw new Error(`
 Max depth of validation is reached
 Max depth: ${this.maxDepth}
@@ -44,6 +47,7 @@ Max depth: ${this.maxDepth}
         for (const field of Object.keys(obj)) {
             let schemaType = schema[field];
             if (!schemaType && isOr) {
+                this.count = 0;
                 return { result: false, errors: [ 'Schema not compatible with object' ] };
             }
             if (!schemaType) {
@@ -53,6 +57,7 @@ Scheme: ${JSON.stringify(schema, null, 2)}
 `
                 if (this.options.validateExtraFields) {
                     errors.push(errMessage);
+                    this.count = 0;
                     return { result: false, errors };
                 } else {
                     // Skip this field if it's not in scheme
@@ -93,6 +98,7 @@ Scheme: ${JSON.stringify(schema, null, 2)}
                 if (results.some(r => r.result)) {
                     continue;
                 }
+                this.count = 0;
                 return { result: false, errors: results.map(r => r.errors).flat() };
             } else if (typeof value === 'object' && Array.isArray(value) && schemaType instanceof ValidatorArraySchema) {
                 const _schema = convertToSchema(schemaType.schema);
@@ -101,6 +107,7 @@ Scheme: ${JSON.stringify(schema, null, 2)}
                     const result = this.validate(v, _schema, errors);
 
                     if (!result?.result) {
+                        this.count = 0;
                         return result;
                     }
                 }
@@ -108,16 +115,19 @@ Scheme: ${JSON.stringify(schema, null, 2)}
             } else if (typeof value === 'object' && typeof schemaType === 'object' && schemaType instanceof ValidatorNestedSchema) {
                 const result = this.validate(value as ValidatableObj, schemaType.schema, errors);
                 if (!result.result) {
+                    this.count = 0;
                     return result;
                 }
                 continue;
             } else if (typeof value !== 'object' && typeof schemaType === 'object' && schemaType instanceof ValidatorNestedSchema) {
+                this.count = 0;
                 return { result: false, errors: [`Field ${field} has not matched with scheme`] };
             } else if (typeof schemaType === 'object' && typeof (schemaType as ShemeExtendedType)?.type === 'string' && SCHEME_TYPES[(schemaType as ShemeExtendedType).type]) {
                 schemaType = (schemaType as ShemeExtendedType).type as SchemeTypes;
             }
 
             if (typeof schemaType === 'string' && !SCHEME_TYPES[schemaType]) {
+                this.count = 0;
                 throw new Error(`
 Validator can't handle passed type
 Type: ${schemaType}
@@ -130,6 +140,7 @@ Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
                 if (!result) {
                     const reason = 'because validate function returned false';
                     errors.push(errorMessage ?? `Field ${field} is not valid, ${reason}`);
+                    this.count = 0;
                     return { result: Boolean(result), errors };
                 } else {
                     continue;
@@ -138,6 +149,7 @@ Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
 
             if (!schemaType || typeof schemaType !== 'string') {
                 console.log({ schemaType })
+                this.count = 0;
                 throw new Error(`
 Unexpected type for validation
 Type schemaType: ${schemaType}
@@ -149,6 +161,7 @@ Type schemaType: ${schemaType}
                     const result = Array.isArray(value);
                     if (!result) {
                         errors.push(`Field ${field} is not an array`);
+                        this.count = 0;
                         return { result, errors };
                     }
                     break;
@@ -159,11 +172,13 @@ Type schemaType: ${schemaType}
                         if (!result) {
                             const reason = 'because validate function returned false';
                             errors.push(errorMessage ?? `Field ${field} is not a json, ${reason}`);
+                            this.count = 0;
                             return { result: Boolean(result), errors };
                         }
                         
                     } catch (e) {
                         errors.push(errorMessage ?? `Field ${field} is not a json`);
+                        this.count = 0;
                         return { result: false, errors };
                     }
                     break;
@@ -172,72 +187,92 @@ Type schemaType: ${schemaType}
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.EMAIL, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'url': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.URL, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
+                        
                     break;
                 }
                 case 'uuid': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.UUID, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
+                        
                     break;
                 }
                 case 'base64': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.BASE64, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'hex': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.HEX, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'hexColor': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.HEX_COLOR, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'creditCard': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.CREDIT_CARD, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'ipv4': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.IPV4, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'ipv6': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.IPV6, validateFn, errorMessage
                     });
-                    if (!res.result)
+                    if (!res.result) {
+                        this.count = 0;
                         return res;
+                    }
                     break;
                 }
                 case 'number':
@@ -245,12 +280,14 @@ Type schemaType: ${schemaType}
                 case 'boolean':
                     if (typeof value !== schemaType) {
                         errors.push(errorMessage ?? `Field ${field} is not a ${schemaType}`);
+                        this.count = 0;
                         return { result: false, errors };
                     }
                     break;
 
                 default:
                     console.dir({ schemaType })
+                    this.count = 0;
                     throw new Error(`
 Unexpected type for validation
 Type: ${schemaType}, default case
@@ -258,6 +295,7 @@ Type: ${schemaType}, default case
             }
         }
 
+        this.count = 0;
         return { result: errors.length === 0, errors };
     }
 }

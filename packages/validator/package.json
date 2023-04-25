@@ -1,6 +1,6 @@
 {
     "name": "@handy-tools/validator",
-    "version": "0.1.3",
+    "version": "0.2.1",
     "description": "Dependency free  validator for objects",
     "main": "dist/cjs/index.js",
     "module": "dist/esm/index.js",
