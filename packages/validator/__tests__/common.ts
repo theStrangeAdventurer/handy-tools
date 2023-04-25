@@ -1,5 +1,22 @@
 import { Validator } from '../src';
 
+test('Should correctly validate incompatible object', () => {
+    const scheme = new Validator({
+        name: 'string',
+        title: 'string',
+        type: 'string',
+    });
+
+    const res = scheme.validate({
+        name: 'John',
+    });
+
+    expect([
+        "Object is incompatible with scheme: hasn't this 'title' field",
+        "Object is incompatible with scheme: hasn't this 'type' field"
+      ].sort()).toEqual(res.errors.sort());
+});
+
 test('Should correctly handle all values', () => {
     const scheme = new Validator({
         name: 'string',

@@ -27,6 +27,14 @@ class Validator {
 
     validate(obj: ValidatableObj, schema = this.schema, errors = [] as string[], isOr = false): ValidateResult {
         this.count++;
+        const objectKeys = Object.keys(obj);
+        const schemaKeys = Object.keys(schema);
+        const incompatibleKeys = schemaKeys.filter(key => !objectKeys.includes(key));
+
+        if (incompatibleKeys.length) {
+            const errors = incompatibleKeys.map(key => `Object is incompatible with scheme: hasn't this '${key}' field`);
+            return { result: false, errors };
+        }
         if (this.count > this.maxDepth) {
             throw new Error(`
 Max depth of validation is reached
