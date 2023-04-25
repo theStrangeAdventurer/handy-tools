@@ -7,7 +7,7 @@
     "types": "dist/index.d.ts",
     "repository": {
         "type": "https",
-        "url": "https://github.com/theStrangeAdventurer/handy-tools/tree/main/packages/object-validator"
+        "url": "https://github.com/theStrangeAdventurer/handy-tools/tree/main/packages/validator"
     },
     "license": "MIT",
     "files": [

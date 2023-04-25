@@ -1,12 +1,12 @@
 # Validator
 
-🎸 Fancy validator for objects.
+🎸 Dependency free fancy validator for objects.
 
 
 ## Installation
 
 ```bash
-npm install @handy-tools/validator
+npm install @handy-tools/validator@latest
 ```
 
 ## Usage
