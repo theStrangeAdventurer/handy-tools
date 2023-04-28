@@ -8,7 +8,7 @@ export const validateWithRegexp = (props: {
     const result = validateFn ? validateFn(value) : re.test(value);
     if (!result) {
         const reason = validateFn ? 'because validate function returned false' : `${value} does not match the regexp ${re.toString()}`;
-        message = errorMessage ?? `Field ${field} is invalid, ${reason}`;
+        message = errorMessage ?? `Field is invalid, ${reason}`;
     }
-    return { result, errors: [message] };
+    return { result, errors: { [field]: message } };
 }

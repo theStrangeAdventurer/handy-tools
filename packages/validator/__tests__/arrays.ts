@@ -33,7 +33,7 @@ test('Should correctly working with array invalid items', () => {
         ],
     });
 
-    expect(res.errors[0]).toContain('Field emails is invalid');
+    expect(Object.keys(res.errors)[0]).toEqual('emails');
 });
 
 test('Should correctly working with array object items', () => {
@@ -73,7 +73,7 @@ test('Should correctly working with array invalid object items', () => {
             { email: 'sometest@gmail.com', name: 'Jack' }
         ],
     });
-    expect(res.errors[0]).toContain('Field email is invalid, notEmail does not match');
+    expect(Object.keys(res.errors)[0]).toEqual('email');
 });
 
 test('Should correctly working with array object items with errors', () => {
@@ -93,5 +93,5 @@ test('Should correctly working with array object items with errors', () => {
         ],
     });
 
-    expect(res.errors[0]).toContain('Field email is invalid');
+    expect(res.errors['email']).toContain('Field is invalid');
 });

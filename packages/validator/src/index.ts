@@ -1,5 +1,5 @@
 import { REGEXP } from "./constants";
-import { ObjectSchema, SchemeTypes, ValidatableObj, ValidateResult, ShemeExtendedType, SCHEME_TYPES } from "./types";
+import { ObjectSchema, SchemeTypes, ValidatableObj, ValidateResult, ShemeExtendedType, SCHEME_TYPES, ValidationErrors } from "./types";
 import { validateWithRegexp } from "./utils";
 import { ValidatorNestedSchema, ValidatorArraySchema, ValidatorOrSchema } from "./validator-helpers";
 
@@ -25,20 +25,30 @@ class Validator {
         return new ValidatorOrSchema(schema);
     }
 
-    validate(obj: ValidatableObj, schema = this.schema, errors = [] as string[], isOr = false): ValidateResult {
-        // FIXME: need clean this count when validation is finished in one place instead multiple places
+    validate(
+        obj: ValidatableObj,
+        schema = this.schema, /* Need for Recursive calls */
+        errors = {} as ValidationErrors,  /* Need for Recursive calls */
+        isOr = false, /* Need for Recursive calls */
+        isRecursive = false  /* Need for Recursive calls and reset nesting count */
+    ): ValidateResult {
+        if (!isRecursive)
+            this.count = 0;
         this.count++;
         const objectKeys = Object.keys(obj);
         const schemaKeys = Object.keys(schema);
         const incompatibleKeys = schemaKeys.filter(key => !objectKeys.includes(key));
 
         if (incompatibleKeys.length) {
-            const errors = incompatibleKeys.map(key => `Object is incompatible with scheme: hasn't this '${key}' field`);
-            this.count = 0;
+            const errors = incompatibleKeys.reduce((acc, key) => {
+                acc[key] = `Object is incompatible with scheme: hasn't this '${key}' field`;
+                return acc;
+            }, {} as ValidationErrors);
+            
             return { result: false, errors };
         }
         if (this.count > this.maxDepth) {
-            this.count = 0;
+            
             throw new Error(`
 Max depth of validation is reached
 Max depth: ${this.maxDepth}
@@ -47,8 +57,8 @@ Max depth: ${this.maxDepth}
         for (const field of Object.keys(obj)) {
             let schemaType = schema[field];
             if (!schemaType && isOr) {
-                this.count = 0;
-                return { result: false, errors: [ 'Schema not compatible with object' ] };
+                
+                return { result: false, errors: { common: 'Schema not compatible with object' } };
             }
             if (!schemaType) {
                 const errMessage = `Validator hasn't this field in scheme
@@ -56,9 +66,7 @@ Field: ${field}
 Scheme: ${JSON.stringify(schema, null, 2)}
 `
                 if (this.options.validateExtraFields) {
-                    errors.push(errMessage);
-                    this.count = 0;
-                    return { result: false, errors };
+                    return { result: false, errors: { [field]: errMessage } };
                 } else {
                     // Skip this field if it's not in scheme
                     continue;
@@ -92,42 +100,39 @@ Scheme: ${JSON.stringify(schema, null, 2)}
                 const _validatableObj = convertValueToValidationObj(value);
                 
                 const results = _schemas.map(_scheme => {
-                    const result = this.validate(_validatableObj, _scheme, errors, true)
+                    const result = this.validate(_validatableObj, _scheme, errors, true, true)
                     return result;
                 });
                 if (results.some(r => r.result)) {
                     continue;
                 }
-                this.count = 0;
-                return { result: false, errors: results.map(r => r.errors).flat() };
+                
+                return { result: false, errors: results.reduce((acc, r) => {
+                    return Object.assign(acc, r.errors);
+                }, {} as ValidationErrors) };
             } else if (typeof value === 'object' && Array.isArray(value) && schemaType instanceof ValidatorArraySchema) {
                 const _schema = convertToSchema(schemaType.schema);
                 const _values = value.map(convertValueToValidationObj);
                 for (const v of _values) {
-                    const result = this.validate(v, _schema, errors);
+                    const result = this.validate(v, _schema, errors, false, true);
 
-                    if (!result?.result) {
-                        this.count = 0;
+                    if (!result?.result)
                         return result;
-                    }
                 }
                 continue;
             } else if (typeof value === 'object' && typeof schemaType === 'object' && schemaType instanceof ValidatorNestedSchema) {
-                const result = this.validate(value as ValidatableObj, schemaType.schema, errors);
-                if (!result.result) {
-                    this.count = 0;
+                const result = this.validate(value as ValidatableObj, schemaType.schema, errors, false, true);
+                if (!result.result)
                     return result;
-                }
                 continue;
             } else if (typeof value !== 'object' && typeof schemaType === 'object' && schemaType instanceof ValidatorNestedSchema) {
-                this.count = 0;
-                return { result: false, errors: [`Field ${field} has not matched with scheme`] };
+                return { result: false, errors: { [field]: `Field has not matched with scheme` } };
             } else if (typeof schemaType === 'object' && typeof (schemaType as ShemeExtendedType)?.type === 'string' && SCHEME_TYPES[(schemaType as ShemeExtendedType).type]) {
                 schemaType = (schemaType as ShemeExtendedType).type as SchemeTypes;
             }
 
             if (typeof schemaType === 'string' && !SCHEME_TYPES[schemaType]) {
-                this.count = 0;
+                
                 throw new Error(`
 Validator can't handle passed type
 Type: ${schemaType}
@@ -139,8 +144,7 @@ Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
                 const result = validateFn(value);
                 if (!result) {
                     const reason = 'because validate function returned false';
-                    errors.push(errorMessage ?? `Field ${field} is not valid, ${reason}`);
-                    this.count = 0;
+                    errors[field] = errorMessage ?? `Field is not valid, ${reason}`;
                     return { result: Boolean(result), errors };
                 } else {
                     continue;
@@ -149,7 +153,7 @@ Available types: ${Object.keys(SCHEME_TYPES).join(', ')}
 
             if (!schemaType || typeof schemaType !== 'string') {
                 console.log({ schemaType })
-                this.count = 0;
+                
                 throw new Error(`
 Unexpected type for validation
 Type schemaType: ${schemaType}
@@ -160,8 +164,8 @@ Type schemaType: ${schemaType}
                 case 'array':{
                     const result = Array.isArray(value);
                     if (!result) {
-                        errors.push(`Field ${field} is not an array`);
-                        this.count = 0;
+                        errors[field] = `Field is not an array`;
+                        
                         return { result, errors };
                     }
                     break;
@@ -171,14 +175,12 @@ Type schemaType: ${schemaType}
                         const result = validateFn ? validateFn(value) : JSON.parse(value as string);
                         if (!result) {
                             const reason = 'because validate function returned false';
-                            errors.push(errorMessage ?? `Field ${field} is not a json, ${reason}`);
-                            this.count = 0;
+                            errors[field] = errorMessage ?? `Field is not a json, ${reason}`;
                             return { result: Boolean(result), errors };
                         }
                         
                     } catch (e) {
-                        errors.push(errorMessage ?? `Field ${field} is not a json`);
-                        this.count = 0;
+                        errors[field] = errorMessage ?? `Field ${field} is not a json`;
                         return { result: false, errors };
                     }
                     break;
@@ -187,116 +189,92 @@ Type schemaType: ${schemaType}
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.EMAIL, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'url': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.URL, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
-                        
                     break;
                 }
                 case 'uuid': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.UUID, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
-                        
                     break;
                 }
                 case 'base64': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.BASE64, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'hex': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.HEX, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'hexColor': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.HEX_COLOR, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'creditCard': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.CREDIT_CARD, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'ipv4': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.IPV4, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'ipv6': {
                     const res = validateWithRegexp({
                         field, value, re: REGEXP.IPV6, validateFn, errorMessage
                     });
-                    if (!res.result) {
-                        this.count = 0;
+                    if (!res.result)
                         return res;
-                    }
                     break;
                 }
                 case 'number':
                 case 'string':
                 case 'boolean':
                     if (typeof value !== schemaType) {
-                        errors.push(errorMessage ?? `Field ${field} is not a ${schemaType}`);
-                        this.count = 0;
+                        errors[field] = errorMessage ?? `Field is not a ${schemaType}`;
                         return { result: false, errors };
                     }
                     break;
 
                 default:
-                    console.dir({ schemaType })
-                    this.count = 0;
                     throw new Error(`
 Unexpected type for validation
 Type: ${schemaType}, default case
                     `)
             }
         }
-
-        this.count = 0;
-        return { result: errors.length === 0, errors };
+        
+        return { result: Object.keys(errors).length === 0, errors };
     }
 }
 

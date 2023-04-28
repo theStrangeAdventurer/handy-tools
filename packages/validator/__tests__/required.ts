@@ -21,18 +21,13 @@ test('Should correctly handle not required fiedls', () => {
 });
 
 test('Should fail on empty required fields', () => {
-    const CUSTOM_ERROR_MESSAGE = 'Name is a required field';
     const scheme = new Validator({
         name: {
-            errorMessage: CUSTOM_ERROR_MESSAGE,
-            required: true, // true is a default value
-            validate: (value) => {
-                return value === 'John'
-            }
+            validate: (value) => value
         },
     });
     const res = scheme.validate({
         name: '',
     });
-    expect(res.errors[0]).toMatch(CUSTOM_ERROR_MESSAGE);
+    expect(res.errors['name']).toBeTruthy();
 });

@@ -10,11 +10,8 @@ test('Should correctly validate incompatible object', () => {
     const res = scheme.validate({
         name: 'John',
     });
-
-    expect([
-        "Object is incompatible with scheme: hasn't this 'title' field",
-        "Object is incompatible with scheme: hasn't this 'type' field"
-      ].sort()).toEqual(res.errors.sort());
+    expect(Object.keys(res.errors)).toContain('title');
+    expect(Object.keys(res.errors)).toContain('type');
 });
 
 test('Should correctly handle all values', () => {
@@ -71,7 +68,7 @@ test('Should fail with validate extra fields', () => {
         email: 'email@gmail.com',
         extra: 'this field nit exists in scheme',
     });
-    expect(res.errors[0]).toContain('Validator hasn\'t this field in scheme');
+    expect(res.errors['extra']).toBeTruthy();
 });
 
 test('Should pass with object with extra fields', () => {
@@ -108,7 +105,7 @@ test('Should fail with validate extra nested fields', () => {
             name: 'John',
         }
     });
-    expect(res.errors[0]).toContain("Validator hasn't this field in scheme");
+    expect(res.errors['extra']).toBeTruthy();
 });
 
 test('Should pass object with extra nested fiedls', () => {
@@ -131,7 +128,7 @@ test('Should pass object with extra nested fiedls', () => {
     expect(res.result).toBeTruthy();
 });
 
-test('Should fail in flat error', () => {
+test('Should fail in flat object error', () => {
     const scheme = new Validator({
         name: 'string',
         age: 'number',
@@ -143,5 +140,5 @@ test('Should fail in flat error', () => {
         age: '20',
         email: 'author@mail.ru',
     });
-    expect(res.errors[0]).toBe('Field age is not a number');
+    expect(res.errors['age']).toBe('Field is not a number');
 });

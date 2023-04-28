@@ -41,5 +41,5 @@ test('Should correctly working with invalid OR conditions', () => {
         name: 'John',
         items: { email: 'notEmail', name: 'John' },
     });
-    expect(res.errors[0]).toContain('Field email is invalid, notEmail does not match');
+    expect(res.errors['email']).toContain('Field is invalid, notEmail does not match');
 });

@@ -19,7 +19,12 @@ export const SCHEME_TYPES = {
     'base64': 'base64',
 } as const;
 
-export type ValidateResult = { result: boolean, errors: string[] };
+type FieldNameStr = string;
+type ErrorMessageStr = string;
+
+export type ValidationErrors = Record<FieldNameStr, ErrorMessageStr>;
+
+export type ValidateResult = { result: boolean, errors: ValidationErrors };
 
 export type SchemeTypes = typeof SCHEME_TYPES[keyof typeof SCHEME_TYPES];
 

@@ -34,7 +34,7 @@ test('Should correctly handle invalid validation fn result', () => {
         age: 20,
         email: 'author@mail.ru',
     });
-    expect(res.errors[0]).toContain('Name must be only John');
+    expect(res.errors['name']).toContain('Name must be only John');
 });
 
 test('Should correctly handle nested validation fn result', () => {
@@ -77,7 +77,7 @@ test('Should fail handle nested validation fn result', () => {
             email: 'invalidEmail',
         }
     });
-    expect(res.errors[0]).toContain(CUSTOM_ERROR_MESSAGE);
+    expect(res.errors['email']).toContain(CUSTOM_ERROR_MESSAGE);
 });
 
 test('Should show custom error message without validate function', () => {
@@ -97,5 +97,5 @@ test('Should show custom error message without validate function', () => {
             email: 'invalidEmail',
         }
     });
-    expect(res.errors[0]).toContain(CUSTOM_ERROR_MESSAGE);
+    expect(res.errors['email']).toContain(CUSTOM_ERROR_MESSAGE);
 });

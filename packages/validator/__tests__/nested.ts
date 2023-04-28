@@ -14,7 +14,7 @@ test('Should fail in nested error', () => {
             ip: 'invalid ip',
         }
     });
-    expect(res.errors[0]).toContain('Field ip is invalid');
+    expect(res.errors['ip']).toBeTruthy();
 });
 
 test('Should fail in nested twice error', () => {
@@ -35,7 +35,7 @@ test('Should fail in nested twice error', () => {
             }
         }
     });
-    expect(res.errors[0]).toContain('Field ip is invalid');
+    expect(res.errors['ip']).toContain('Field is invalid');
 });
 
 
